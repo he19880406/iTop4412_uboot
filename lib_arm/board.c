@@ -229,8 +229,19 @@ static int display_dram_config (void)
 	for (i=0; i<CONFIG_NR_DRAM_BANKS; i++) {
 		size += gd->bd->bi_dram[i].size;
 	}
-	puts("DRAM:	");
+
+#if  defined(CONFIG_SCP_1GDDR) ||  defined(CONFIG_SCP_2GDDR) || defined(CONFIG_SCP_1GDDR_Ubuntu) || defined(CONFIG_SCP_2GDDR_Ubuntu)  //add by dg
+
+	size += 0x100000;
+#endif
+
+#if defined(CONFIG_POP_2GDDR) || defined(CONFIG_POP_2GDDR_Ubuntu) 
+	puts("DRAM: ");
+    puts("2G\n");
+#else
+  	puts("DRAM:	");
 	print_size(size, "\n");
+#endif
 #endif
 
 	return (0);

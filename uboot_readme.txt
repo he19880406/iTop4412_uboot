@@ -1,3 +1,12 @@
+2015-08-12
+1 Merge POP 2G DDR Uboot version to Main Version
+2 Build Method: ./build_uboot.sh POP_2GDDR  for linux&Android OS,  ./build_uboot.sh POP_2GDDR_Ubuntu for Ubuntu12.04 ARM Version.
+
+2015-08-05:DiGuang
+1 Merge kinds of uboot version to only one 
+2 use new build : ./build_uboot.sh  XXX_YYY_ZZZ .  XXX is SCP or POP,YYY is 1GDDR or 2GDDR,ZZZ is Ubuntu or none(linux and android)
+
+
 2012-6-6: Zhang Dong
         1): Modify phone_off to wait for power off to de done
         Modified files:

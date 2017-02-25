@@ -44,6 +44,9 @@
 #define SMDK4412_AP11_ID 	0xE4412211 //mj
 #define SMDK4412_AP10_ID 	0xE4412210 //mj
 
+/* add by cym 20131206 */
+#define SMDK4412_SUPPORT_UBUNTU	1
+/* end add */
 
 /*
  * SECURE BOOT
@@ -71,9 +74,6 @@
 #endif
 
 #endif
-
-
-#if  defined(CONFIG_SCP_1GDDR) ||  defined(CONFIG_SCP_2GDDR) || defined(CONFIG_SCP_1GDDR_Ubuntu) || defined(CONFIG_SCP_2GDDR_Ubuntu)  //add by dg
 
 /* add by cym 20130218 */
 /* IV_SIZE: 128 byte, 2 port(1 Gbyte), open page, trrd: 4 */
@@ -174,11 +174,7 @@
 #define USB_PHY_CONTROL_OFFSET		0x0704
 #define USB_PHY_CONTROL            (0x10020000+USB_PHY_CONTROL_OFFSET)//(ELFIN_CLOCK_POWER_BASE+USB_PHY_CONTROL_OFFSET)
 
-
 /* end add */
-#endif //end SCP Type Boards
-
-
 
 /*********************************************
  *  Configure clock
@@ -400,18 +396,17 @@
 #define CONFIG_NR_DRAM_BANKS    8          	/* 8 banks of DRAM at maximum */
 
 //dg change for kinds of coreboard 2015-08-04
-#ifdef CONFIG_SCP_1GDDR
+#if  defined(CONFIG_SCP_1GDDR_Ubuntu) || defined(CONFIG_POP_2GDDR_Ubuntu)
    #define SDRAM_BANK_SIZE            0x10000000/2	/* each bank has 128 MB */
 
-#elif defined(CONFIG_SCP_2GDDR)
-   #define SDRAM_BANK_SIZE            0x10000000	/* each bank has 256 MB */
+#elif defined(CONFIG_SCP_2GDDR_Ubuntu) ||  defined(CONFIG_POP_1GDDR_Ubuntu)
+   #define SDRAM_BANK_SIZE           0x10000000	/* each bank has 256 MB */
 
-#elif defined(CONFIG_POP_1GDDR)
-   #define SDRAM_BANK_SIZE            0x10000000	/* each bank has 256 MB */
-
-#elif defined(CONFIG_POP_2GDDR)
-   #define SDRAM_BANK_SIZE            0x10000000	/* each bank has 256 MB */
 #endif
+
+
+
+
 
 
 #define PHYS_SDRAM_1            (unsigned long)MEMORY_BASE_ADDRESS /* SDRAM Bank #1 */

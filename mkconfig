@@ -9,14 +9,29 @@
 #
 
 APPEND=no	# Default: Create new config file
-BOARD_NAME=""	# Name to print in make output
+#BOARD_NAME=""	# Name to print in make output
 TARGETS=""
 
+echo "CoreBoard  is $7...... "
+
+if   [ "$7" = "SCP_1GDDR" ]  ||   [ "$7" = "SCP_2GDDR" ] || [ "$7" = "POP_1GDDR" ]  ||   [ "$7" = "POP_2GDDR" ]
+then 
+      BOARD_NAME="itop_4412_android"
+      echo "CoreBoard OS is android or linux...... "
+
+elif [ "$7" = "SCP_1GDDR_Ubuntu" ]  ||  [ "$7" = "SCP_2GDDR_Ubuntu" ] || [ "$7" = "POP_1GDDR_Ubuntu" ] ||  [ "$7" = "POP_2GDDR_Ubuntu" ]
+then
+      BOARD_NAME="itop_4412_ubuntu"
+      echo "CoreBoard OS is Ubuntu...... "
+else
+      echo "unknown coreboard type and os type......"
+fi
+	
 while [ $# -gt 0 ] ; do
 	case "$1" in
 	--) shift ; break ;;
 	-a) shift ; APPEND=yes ;;
-	-n) shift ; BOARD_NAME="${1%%_config}" ; shift ;;
+#	-n) shift ; BOARD_NAME="${1%%_config}" ; shift ;;
 	-t) shift ; TARGETS="`echo $1 | sed 's:_: :g'` ${TARGETS}" ; shift ;;
 	*)  break ;;
 	esac
@@ -25,7 +40,7 @@ done
 [ "${BOARD_NAME}" ] || BOARD_NAME="$1"
 
 [ $# -lt 4 ] && exit 1
-[ $# -gt 6 ] && exit 1
+[ $# -gt 7 ] && exit 1
 
 if [ "${ARCH}" -a "${ARCH}" != "$2" ]; then
 	echo "Failed: \$ARCH=${ARCH}, should be '$2' for ${BOARD_NAME}" 1>&2
@@ -86,6 +101,26 @@ else
     BOARDDIR=$5/$4
 fi
 
+
+
+#add by dg for kinds of coreboard
+if   [ "$7" = "SCP_1GDDR" ] ||   [ "$7" = "SCP_2GDDR" ] || [ "$7" = "SCP_1GDDR_Ubuntu" ] ||   [ "$7" = "SCP_2GDDR_Ubuntu" ]
+then 
+     echo "CORE   =  SCP" >> config.mk
+     ln -sf ${SRCTREE}/board/samsung/smdkc210/lowlevel_init_SCP.S  ${SRCTREE}/board/samsung/smdkc210/lowlevel_init.S	
+     ln -sf ${SRCTREE}/cpu/arm_cortexa9/s5pc210/cpu_init_SCP.S     ${SRCTREE}/cpu/arm_cortexa9/s5pc210/cpu_init.S
+
+elif [ "$7" = "POP_1GDDR" ]  ||  [ "$7" = "POP_2GDDR" ] || [ "$7" = "POP_1GDDR_Ubuntu" ] ||  [ "$7" = "POP_2GDDR_Ubuntu" ]
+then
+     echo "CORE   =  POP" >>  config.mk
+     ln -sf ${SRCTREE}/board/samsung/smdkc210/lowlevel_init_POP.S  ${SRCTREE}/board/samsung/smdkc210/lowlevel_init.S	
+     ln -sf ${SRCTREE}/cpu/arm_cortexa9/s5pc210/cpu_init_POP.S     ${SRCTREE}/cpu/arm_cortexa9/s5pc210/cpu_init.S
+else
+      echo "make config error,please use correct params......"
+      exit 0
+fi
+
+
 #
 # Create board specific header file
 #
@@ -101,10 +136,14 @@ for i in ${TARGETS} ; do
 	echo "#define CONFIG_MK_${i} 1" >>config.h ;
 done
 
+#add by dg for all itop4412 type boards
+
+[ "$7" ] && [ "$7" != "NULL" ] && echo "#define CONFIG_$7" >> config.h
+
 cat << EOF >> config.h
 #define CONFIG_BOARDDIR board/$BOARDDIR
 #include <config_defaults.h>
-#include <configs/$1.h>
+#include <configs/$BOARD_NAME.h>
 #include <asm/config.h>
 EOF
 

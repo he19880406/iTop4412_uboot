@@ -61,6 +61,15 @@ void I2C_S5M8767_VolSetting(PMIC_RegNum eRegNum, u8 ucVolLevel, u8 ucEnable)
 	{
 		reg_addr = 0x48;
 	}
+	/* add by cym 20130315 */
+#if  defined(CONFIG_SCP_1GDDR) ||  defined(CONFIG_SCP_2GDDR) || defined(CONFIG_SCP_1GDDR_Ubuntu) || defined(CONFIG_SCP_2GDDR_Ubuntu)  //add by dg
+	else if(7 == eRegNum)
+	{
+		reg_addr = 0x59;
+		ucVolLevel = 0x40;	// 1.55v
+	}
+#endif
+	/* end add */
 	else
 		while(1);
 
@@ -84,6 +93,16 @@ void pmic8767_init(void)
 	I2C_S5M8767_VolSetting(PMIC_BUCK2, CALC_S5M8767_VOLT1(vdd_arm * 1000), 1);
 	I2C_S5M8767_VolSetting(PMIC_BUCK3, CALC_S5M8767_VOLT1(vdd_int * 1000), 1);
 	I2C_S5M8767_VolSetting(PMIC_BUCK4, CALC_S5M8767_VOLT1(vdd_g3d * 1000), 1);
+
+	/* add by cym 20130315 */
+	//I2C_S5M8767_VolSetting(6, CALC_S5M8767_VOLT1(1.5 * 1000), 1);
+
+#if  defined(CONFIG_SCP_1GDDR) ||  defined(CONFIG_SCP_2GDDR) || defined(CONFIG_SCP_1GDDR_Ubuntu) || defined(CONFIG_SCP_2GDDR_Ubuntu)  //add by dg
+	//set Buck8 to 1.5v, because LDO2's out  decide by Buck8
+	I2C_S5M8767_VolSetting(7, CALC_S5M8767_VOLT1(1.55 * 1000), 1);
+#endif
+	/* end add */
+
 }
 
 
@@ -199,7 +218,11 @@ void PMIC_InitIp(void)
 	    else if(id == 0x3
 				/*add by cym 20130316 */
 			|| (0x5 == id)
-			/* end add */)
+			/* end add */
+			/* add by cym 20151111 */
+			|| (21 == id)
+			/* end add */
+			)
     {
             
 		printf("S5M8767(VER5.0)\n");
@@ -208,7 +231,14 @@ void PMIC_InitIp(void)
 
 	else
 	{
+/* modeify by cym 20151111 */
+#if 0
 	  printf("Pls check the i2c @ pmic, id = %d,error\n",id);
+#else
+	printf("S5M8767(VER6.0)\n");
+	Is_TC4_Dvt = 2;
+#endif
+/* end modify */
 	}
 	//PowerOn the LCD In Kernel.
 	//val = 0x7;
@@ -223,11 +253,15 @@ void PMIC_InitIp(void)
         val = 0x58;
 	   lowlevel_init_max8997(0x5a,&val,1);
      }
+
 /* add by cym 20141125 set LDO18 to 3.3v */
-#if 1
+/* dg change for kinds of coreboard*/
+
+#if  defined(CONFIG_SCP_1GDDR) ||  defined(CONFIG_POP_1GDDR) || defined(CONFIG_SCP_1GDDR_Ubuntu)  || defined(CONFIG_POP_1GDDR_Ubuntu)
         val = 0x32;
         lowlevel_init_max8997(0x70, &val, 1);
 #endif
+
 /* end add */
 	}
 	/*---mj configure for emmc ---*/
@@ -248,10 +282,14 @@ void PMIC_InitIp(void)
 	val |= (0x01<<8);// GPE3[2] output, BUCK6EN
 	writel(val, GPE3CON);
 	#endif
-	
+
 	/* add by cym 20141224 for TP_IOCTL GPX0_3 set low */
-        Outp32(GPX0CON,(Inp32(GPX0CON)&(~(0xf << 12)))|(0x1 << 12));
+	Outp32(GPX0CON,(Inp32(GPX0CON)&(~(0xf << 12)))|(0x1 << 12));
         Outp32(GPX0DAT,(Inp32(GPX0DAT)&(~(0x1 << 3)))|(0x0 << 3));
+	/* end add */
+
+	/* add by cym 20150701 7 inch screen twinkle when syatem start */
+        Outp32(GPL1DRV,(Inp32(GPL1DRV)&(~(0x3)))|(0x2));
         /* end add */
 #endif
 }

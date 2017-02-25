@@ -110,7 +110,8 @@ static void mshci_reset_dma(struct mshci_host *host)
 	writel(ier, host->ioaddr + MSHCI_CTRL);
 	while (readl(host->ioaddr + MSHCI_CTRL) & DMA_RESET) {
 		if (timeout == 0) {
-			printf("Reset DMA never completed.\n");
+			printf("Reset DMA never completed.\n"
+);
 			return;
 		}
 		timeout--;
@@ -132,6 +133,9 @@ static int mshci_reset_all(struct mshci_host *host)
 		if (count == 0) {
 			printf("Controller never released \
 				data0 before reset ciu.\n");
+
+			do_reset (NULL, 0, 0, NULL);
+			
 			return -1;
 		}
 		count--;
