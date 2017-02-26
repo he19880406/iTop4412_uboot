@@ -32,7 +32,7 @@
 #include <version.h>
 
 #include <s5pc210.h>
-#include "smdk4x12_val.h" //mj
+#include "smdk4x12_val.h" 
 
 #define check_mem
 #define MEM_DLLl_ON
@@ -110,17 +110,6 @@ lowlevel_init:
 	beq     1f			/* r0 == r1 then skip sdram init   */
 #endif
 
-/*	liyang 20110822
-	
-	ldr	r0, =CHIP_ID_BASE
-	ldr	r1, [r0]
-	lsr	r1, r1, #8
-	and	r1, r1, #3
-	cmp	r1, #2
-	bne v310_1
-
-*/
-	/* add by cym 20130218 */
 	/* init system clock */
 	bl system_clock_init_scp
 	
@@ -152,25 +141,7 @@ v310_1:
 	sub	r0, r0, #4
 	str	r6, [r0]
 #endif
-#if 0 //test for mt6620 turn off GPC1(0)
-	/*wenpin.cui: headphone and sw uart switch init*/
-	ldr	r0, =0x11000C44
-	ldr	r1, [r0]
-	and	r1, r1, #0x4 	
-	cmp	r1, #0x4	/*uart*/	
-	beq	out	
 
-	ldr     r0, =0x11400084  /* GPC1(0)  */
-	ldr     r1, [r0]	/* read GPC1DAT status*/
-	orr	r1, r1, #0x1	/* GPC1(0) output high  */
-	str     r1, [r0]
-
-	ldr     r0, =0x11400080  /* GPC1(0)  */
-	ldr	r1, [r0]
-	and	r1, r1, #0xfffffff0
-	orr     r1, r1, #0x1	/* GPC1(0) output  */
-	str     r1, [r0]
-#endif
 out:
 	/* for UART */
 	bl uart_asm_init

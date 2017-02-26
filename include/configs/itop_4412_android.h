@@ -34,6 +34,8 @@
 
 #define CONFIG_EVT1     1       /* EVT1 */
 
+#define DEBUG
+
 #define TC4_PLUS		
 /*----CPU ID Defination----*/
 #define SMDK4212_ID 		0x43220000
@@ -471,6 +473,8 @@
  */
 
 #define CONFIG_IDENT_STRING	" for iTOP-4412 Android"
+#define CONFIG_IDENT_CONFIG_H_STRING	" config file is itop_4412_android.h\n"
+
 
 /* total memory required by uboot */
 #define CFG_UBOOT_SIZE		(2*1024*1024)

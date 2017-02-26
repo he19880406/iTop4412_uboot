@@ -6,10 +6,10 @@
 #include "gpio.h"
 #include "i2c.h"
 
-/* add by cym 20141224 */
 #define Inp32(_addr)            readl(_addr)
 #define Outp32(addr, data)      (*(volatile u32 *)(addr) = (data))
-/* end add */
+
+int Is_TC4_Dvt = 0;
 
 const PMIC_Type_st gVoltage_Type[3] = 
 {
@@ -105,10 +105,7 @@ void pmic8767_init(void)
 
 }
 
-
-
-int Is_TC4_Dvt = 0;
-
+#if 0
 void GPIO_Reset_A(void)
 {
 	// RESET
@@ -129,6 +126,7 @@ void GPIO_Reset_B(void)
 	GPIO_SetDataEach(eGPIO_X1, eGPIO_0, 1); // XEINT[5]
 
 }
+#endif
 void PMIC_InitIp(void)
 {
 	u8 id;
@@ -158,140 +156,47 @@ void PMIC_InitIp(void)
 	
 	if (I2C_InitIp(I2C1, I2C_TX_CLOCK_125KHZ, I2C_TIMEOUT_INFINITY) != 1) {
 		printf("PMIC init filed!\n");
-	}
+	}	
 
-#if 0 //ndef CONFIG_TA4	
-
-	GPIO_Reset_A();
-	GPIO_Reset_B();
-
-#if defined(CONFIG_PM_11V)
-	printf("ARM 1.1V");
-	PMIC_SetVoltage_Buck(eVDD_ARM,	eVID_MODE3,1.1);
-	printf(", ");
-
-	printf("INT 1.1V");
-	PMIC_SetVoltage_Buck(eVDD_INT,	eVID_MODE2,1.1);
-
-#elif defined(CONFIG_PM_12V)
-	printf("ARM 1.2V");
-	PMIC_SetVoltage_Buck(eVDD_ARM,	eVID_MODE3,1.2);
-	printf(", ");
-
-	printf("INT 1.2V");
-	PMIC_SetVoltage_Buck(eVDD_INT,	eVID_MODE2,1.2);
-#elif defined(CONFIG_PM_13V_12V)
-	printf("ARM 1.3V");
-	PMIC_SetVoltage_Buck(eVDD_ARM,  eVID_MODE3,1.3);
-	printf(", ");
-
-	printf("INT 1.2V");
-	PMIC_SetVoltage_Buck(eVDD_INT,  eVID_MODE2,1.2);
-#endif
-
-#else
-	Is_TC4_Dvt = 0;
-	
-	lowlevel_init_max8997(0,&id,0);
-	if(id == 0x77)
-	{
-		printf("Max8997 @ TC4 EVT\n");
-		Is_TC4_Dvt = 0;
-	}
-	else if(id == 0x67)//DVT board
-	{
-		printf("S5M8767(VER2.0)\n");
-		Is_TC4_Dvt = 1;
-	}
-    else if(id == 0x1)
-    {
-            
-		printf("S5M8767(VER3.0) \n");
-        	Is_TC4_Dvt = 2;
-    }
-    else if(id == 0x2)
-    {
-            
-		printf("S5M8767(VER4.0) \n");
-       	 Is_TC4_Dvt = 2;
-    }  
-	    else if(id == 0x3
-				/*add by cym 20130316 */
-			|| (0x5 == id)
-			/* end add */
-			/* add by cym 20151111 */
-			|| (21 == id)
-			/* end add */
-			)
-    {
-            
+	lowlevel_init_max8997(0,&id,0);	
+	if(id == 0x3|| (0x5 == id) || (21 == id))
+    	{            
 		printf("S5M8767(VER5.0)\n");
-       	 Is_TC4_Dvt = 2;
-    }  
-
+       		 Is_TC4_Dvt = 2;
+   	 }  
 	else
 	{
-/* modeify by cym 20151111 */
-#if 0
-	  printf("Pls check the i2c @ pmic, id = %d,error\n",id);
-#else
-	printf("S5M8767(VER6.0)\n");
-	Is_TC4_Dvt = 2;
-#endif
-/* end modify */
+		printf("current board not support ! \n");
+		Is_TC4_Dvt = 0;
 	}
-	//PowerOn the LCD In Kernel.
-	//val = 0x7;
-	//lowlevel_init_max8997(0x37,&val,1);
 
 	if(Is_TC4_Dvt)
-	{
-	
-	 pmic8767_init();
-     if(Is_TC4_Dvt == 2)
-     {
-        val = 0x58;
-	   lowlevel_init_max8997(0x5a,&val,1);
-     }
-
-/* add by cym 20141125 set LDO18 to 3.3v */
-/* dg change for kinds of coreboard*/
+	{	
+		 pmic8767_init();
+		 if(Is_TC4_Dvt == 2)
+		 {
+		    val = 0x58;
+		   lowlevel_init_max8997(0x5a,&val,1);
+		 }
 
 #if  defined(CONFIG_SCP_1GDDR) ||  defined(CONFIG_POP_1GDDR) || defined(CONFIG_SCP_1GDDR_Ubuntu)  || defined(CONFIG_POP_1GDDR_Ubuntu)
-        val = 0x32;
-        lowlevel_init_max8997(0x70, &val, 1);
+        	val = 0x32;
+       		lowlevel_init_max8997(0x70, &val, 1);
 #endif
-
-/* end add */
 	}
-	/*---mj configure for emmc ---*/
+	
 	uSendData[0] =0x6f;
 	uSendData[1] =0x68;
 
 	I2C_SendEx(I2C1, 0xcc, NULL, 0, uSendData, 2);
 
-	#if 0
-	val = readl(GPE3DAT);
-	val &= ~(0x01<<2);
-	val |= (0x01<<2);
-	writel(val, GPE3DAT);
-
-	
-	val = readl(GPE3CON);
-	val &= ~(0x0f<<8);
-	val |= (0x01<<8);// GPE3[2] output, BUCK6EN
-	writel(val, GPE3CON);
-	#endif
-
-	/* add by cym 20141224 for TP_IOCTL GPX0_3 set low */
+	/* TP_IOCTL GPX0_3 set low */
 	Outp32(GPX0CON,(Inp32(GPX0CON)&(~(0xf << 12)))|(0x1 << 12));
         Outp32(GPX0DAT,(Inp32(GPX0DAT)&(~(0x1 << 3)))|(0x0 << 3));
-	/* end add */
 
-	/* add by cym 20150701 7 inch screen twinkle when syatem start */
-        Outp32(GPL1DRV,(Inp32(GPL1DRV)&(~(0x3)))|(0x2));
-        /* end add */
-#endif
+	/*  7 inch screen twinkle when syatem start */
+        Outp32(GPL1DRV,(Inp32(GPL1DRV)&(~(0x3)))|(0x2));       
+
 }
 
 

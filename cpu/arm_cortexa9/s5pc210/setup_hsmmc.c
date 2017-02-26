@@ -74,14 +74,9 @@ void setup_hsmmc_clock(void)
 	u32 tmp;
 	u32 clock;
 	u32 i;
+	ulong mpll;
 
-
-#ifdef USE_MMC0
-#endif	
-
-#ifdef USE_MMC1
-#endif	
-
+/* TF Card */
 #ifdef USE_MMC2
 	/* MMC2 clock src = SCLKMPLL */
 	tmp = CLK_SRC_FSYS & ~(0x00000f00);
@@ -89,20 +84,19 @@ void setup_hsmmc_clock(void)
 
 	/* MMC2 clock div */
 	tmp = CLK_DIV_FSYS2 & ~(0x0000000f);
-	clock = get_MPLL_CLK()/1000000;
+	mpll = get_MPLL_CLK();	
+	clock = mpll /1000000;
+	printf("mpll = %ldMB\n", clock);
 	for(i=0 ; i<=0xf; i++)
 	{
-		if((clock /(i+1)) <= 50) {
+		if((clock /(i+1)) <= 50) {    
 			CLK_DIV_FSYS2 = tmp | i<<0;
 			break;
 		}
 	}
 	
-	sddbg("[mjdbg] the sd clock ratio is %d,%d\n",i,clock);
+	printf("[mjdbg] the sd clock ratio is %d,%dMB\n",i,clock);
 
-#endif
-
-#ifdef USE_MMC3
 #endif
 
 #ifdef USE_MMC4
@@ -122,7 +116,7 @@ void setup_hsmmc_clock(void)
 			break;
 		}
 	}
-	emmcdbg("[mjdbg] sclk_mmc4:%d MHZ; mmc_ratio: %d\n",sclk_mmc4,i);
+	printf("[mjdbg] sclk_mmc4:%d MHZ; mmc_ratio: %d\n",sclk_mmc4,i);
 	sclk_mmc4 *= 1000000;
 #endif
 
@@ -145,30 +139,15 @@ void setup_hsmmc_cfg_gpio(void)
 	writel(0x00003FC0, 0x1100006c);	
 #endif
 
-#ifdef USE_MMC1
-#endif
-
 #ifdef USE_MMC2
 	writel(0x02222222, 0x11000080);
 	writel(0x00003FF0, 0x11000088);
 	writel(0x00003FFF, 0x1100008C);
 #endif
 
-#ifdef USE_MMC3
-#endif
 
 #ifdef USE_MMC4
 
-
-	
-	#if 0
-//reset
-	writel(0x03333100, 0x11000040);
-	writel(0x0, 0x11000044);
-	writel(0x00003FF5, 0x11000048);
-	udelay(100*1000);
-	writel(0x03333333, 0x11000040);
-	#else//mj
 	writel(readl(0x11000048)&~(0xf),0x11000048); //SD_4_CLK/SD_4_CMD pull-down enable
 	writel(readl(0x11000040)&~(0xff),0x11000040);//cdn set to be output
 
@@ -179,8 +158,7 @@ void setup_hsmmc_cfg_gpio(void)
 	writel(readl(0x11000044)|(1<<2),0x11000044); //cdn output 1
 
 	
-	writel(0x03333133, 0x11000040);
-	#endif
+	writel(0x03333133, 0x11000040);	
 	writel(0x00003FF0, 0x11000048);
 	writel(0x00002AAA, 0x1100004C);
 	
@@ -196,25 +174,5 @@ void setup_hsmmc_cfg_gpio(void)
 
 void setup_sdhci0_cfg_card(struct sdhci_host *host)
 {
-#if 0 //mj del
-	u32 ctrl2;
-	u32 ctrl3;
-	/* don't need to alter anything acording to card-type */
-	writel(S3C_SDHCI_CONTROL4_DRIVE_9mA, host->ioaddr + S3C_SDHCI_CONTROL4);
-	ctrl2 = readl(host->ioaddr + S3C_SDHCI_CONTROL2);
 
-	ctrl2 |= (S3C_SDHCI_CTRL2_ENSTAASYNCCLR |
-		  S3C_SDHCI_CTRL2_ENCMDCNFMSK |
-#if defined(CONFIG_MCP_SINGLE)
-                  S3C_SDHCI_CTRL2_ENFBCLKRX |
-#endif
-		S3C_SDHCI_CTRL2_ENFBCLKTX |
-		S3C_SDHCI_CTRL2_DFCNT_NONE	|
-		S3C_SDHCI_CTRL2_ENCLKOUTHOLD);
-
-	ctrl3 = 0;
-
-	writel(ctrl2, host->ioaddr + S3C_SDHCI_CONTROL2);
-	writel(ctrl3, host->ioaddr + S3C_SDHCI_CONTROL3);
-#endif
 }

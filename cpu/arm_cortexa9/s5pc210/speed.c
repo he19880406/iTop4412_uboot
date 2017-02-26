@@ -62,11 +62,7 @@ static ulong get_PLLCLK(int pllreg)
 		hang();
 
 	p = (r>>8) & 0x3f;
-	s = r & 0x7;
-
-	//if ((pllreg == APLL) || (pllreg == MPLL)) 
-	//	s= s-1;
-	
+	s = r & 0x7;	
 	return (m * (CONFIG_SYS_CLK_FREQ / (p * (1 << s))));
 }
 
@@ -89,7 +85,7 @@ ulong get_ARM_CLK(void)//mj
 	core_ratio = reg&0x00000007;
 	core2_ratio = (reg>>28)&0x7;
 	apll_out=get_PLLCLK(APLL);
-	//printf("cpu ratio: %d,%d",core_ratio,core2_ratio);
+	
 	return ((apll_out/(core_ratio+1))/(core2_ratio+1));
 }
 

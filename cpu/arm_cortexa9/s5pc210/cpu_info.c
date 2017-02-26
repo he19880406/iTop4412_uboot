@@ -32,68 +32,25 @@ ulong get_MPLL_CLK(void);
 
 void check_bootmode(void);
 
-/* Default is s5pc210 */
-#define PRO_ID_OFF	0x10000000
-#define S5PC210_ID	0x43210200
-#define S5PV310_ID	0x43210000
+#define REG_EXYNOS4412_PRO_ID	             0x10000000
+#define REG_EXYNOS4412_PACKAGE_ID         0x10000004
+#define EXYNOS4412_PRO_ID_VAL                  0xe4412011
+#define EXYNOS4412_PACKAGE_ID_VAL         0x0604e008
 
-//#define SMDK4212_ID 0x43220000
-//#define SMDK4212_AP11_ID 0x43220210 //mj
-//#define SMDK4212_AP10_ID 0x43220200 //mj
-
-//#define SMDK4412_ID 0xE4412000
 #define SECURE_PHY_BASE	0x10100018
 
-unsigned int s5pc210_cpu_id;// = 0xc200;
+unsigned int s5pc210_cpu_id;
 
-char * CORE_NUM_STR="\0"; //core number information
-//char * CPU_VER_STR = "\0"; //CPU VERSION
+char * CORE_NUM_STR="\0"; 
 
-//#ifdef CONFIG_ARCH_CPU_INIT
 int arch_cpu_init(void)
-{
-	s5pc210_cpu_id = readl(PRO_ID_OFF);
-
-	if(s5pc210_cpu_id == S5PC210_ID) {
-		unsigned int efused = *(volatile u32 *)SECURE_PHY_BASE;
-		if(efused == 0x0) {
-			printf("\nCPU:	S5PC210 [Samsung ASIC on SMP Platform Base on ARM CortexA9]\n");
-		} else {
-			printf("\nCPU:  S5PC210(Secure) [Samsung ASIC on SMP Platform Base on ARM CortexA9]\n");
-		}
-	}
-	else if(s5pc210_cpu_id == S5PV310_ID)
-		printf("\nCPU:	S5PV310 [Samsung ASIC on SMP Platform Base on ARM CortexA9]\n");
-
-
-	/*added by jinzhebin*/
-	else if (s5pc210_cpu_id == SMDK4212_AP10_ID)
-	{
-		printf("\nCPU:	SMDK4212-AP1.0 [%x]\n",s5pc210_cpu_id);
-		strcpy(CORE_NUM_STR,"Dual");
-	}
-	else if(s5pc210_cpu_id == SMDK4212_AP11_ID)
-	{
-		printf("\nCPU:	SMDK4212-AP1.1 [%x]\n",s5pc210_cpu_id);
-		strcpy(CORE_NUM_STR,"Dual");
-	}
-	else if (s5pc210_cpu_id == SMDK4412_AP10_ID)
-	{
-		printf("\nCPU:	SMDK4412-AP1.0 [%x]\n",s5pc210_cpu_id);
-		strcpy(CORE_NUM_STR,"Quad");
-	}
-	else if (s5pc210_cpu_id == SMDK4412_AP11_ID)
-	{
-		printf("\nCPU:	SMDK4412-AP1.1 [%x]\n",s5pc210_cpu_id);
-		strcpy(CORE_NUM_STR,"Quad");
-	}
-	
-		
-	printf("	APLL = %ldMHz, MPLL = %ldMHz\n", get_APLL_CLK()/1000000, get_MPLL_CLK()/1000000);
-	printf("	ARM_CLOCK = %ldMHz\n", get_ARM_CLK()/1000000);
+{	
+	s5pc210_cpu_id = readl(REG_EXYNOS4412_PRO_ID);
+	printf("PRO_ID: 0x%08x, PACKAGE_ID: 0x%08x\n", readl(REG_EXYNOS4412_PRO_ID), readl(REG_EXYNOS4412_PACKAGE_ID));	
+	printf("APLL = %ldMHz, MPLL = %ldMHz\n", get_APLL_CLK()/1000000, get_MPLL_CLK()/1000000);
+	printf("ARM_CLOCK = %ldMHz\n", get_ARM_CLK()/1000000);
 	return 0;
 }
-//#endif
 
 u32 get_device_type(void)
 {

@@ -122,49 +122,7 @@ _bss_start:
 .globl _bss_end
 _bss_end:
 	.word _end
-
-    .macro  cache_invalidate_dcache_v7
-    MRC     p15, 1, r0, c0, c0, 1      @ read Cache Level ID register (clidr)
-    ANDS    r3, r0, #0x7000000         @ extract level of coherency from clidr
-    MOV     r3, r3, lsr #23            @ left align level of coherency bit field
-    BEQ     finished_inval             @ if loc is 0, then no need to clean
-
-    MOV     r10, #0                    @ start clean at cache level 0 (in r10)
-loop_1:
-    ADD     r2, r10, r10, lsr #1       @ work out 3x current cache level
-    MOV     r1, r0, lsr r2             @ extract cache type bits from clidr
-    AND     r1, r1, #7                 @ mask of the bits for current cache only
-    CMP     r1, #2                     @ see what cache we have at this level
-    BLT     skip_inval                 @ skip if no cache, or just i-cache
-    MCR     p15, 2, r10, c0, c0, 0     @ select current cache level in cssr
-    MOV     r1, #0
-    MCR     p15, 0, r1, c7, c5, 4      @ prefetchflush to synch the new cssr&csidr
-    MRC     p15, 1, r1, c0, c0, 0      @ read the new csidr
-    AND     r2, r1, #7                 @ extract the length of the cache lines
-    ADD     r2, r2, #4                 @ add 4 (line length offset)
-    LDR     r6, =0x3ff
-    ANDS    r6, r6, r1, lsr #3         @ find maximum number on the way size
-    CLZ     r5,r6                       @ DCI 0xE16F5F16 , find bit position of way size increment
-    LDR     r7, =0x7fff
-    ANDS    r7, r7, r1, lsr #13        @ extract max number of the index size
-loop_2:
-    MOV     r8, r6                     @ create working copy of max way size
-	loop_3:
-    ORR     r11, r10, r8, lsl r5       @ factor way and cache number into r11
-    ORR     r11, r11, r7, lsl r2       @ factor index number into r11
-    MCR     p15, 0, r11, c7, c6, 2     @ invalidate by set/way
-    SUBS    r8, r8, #1                 @ decrement the way
-    BGE     loop_3
-
-    SUBS    r7, r7, #1                 @ decrement the index
-    BGE     loop_2
-skip_inval:
-    ADD     r10, r10, #2               @ increment cache number
-    CMP     r3, r10
-    BGT     loop_1
-finished_inval:
-    .endm
-
+ 
 #if defined(CONFIG_USE_IRQ)
 /* IRQ stack memory (calculated at run-time) */
 .globl IRQ_STACK_START
@@ -182,22 +140,15 @@ FIQ_STACK_START:
  */
 
 reset:
-#if 0
+
 	/*
 	 * set the cpu to SVC32 mode and IRQ & FIQ disable
 	 */
 	mrs	r0, cpsr
-	bic	r0, r0, #0x3f
-	orr	r0, r0, #0xd3
-	msr	cpsr, r0
-#else//*****ly
-	mrs	r0, cpsr
 	bic	r0, r0, #0x1f
 	orr	r0, r0, #0xd3
 	msr	cpsr,r0
-#endif
-//	cache_invalidate_dcache_v7			@ call cache macro
-#if 1 //*****ly
+
 cache_init:
 	mrc	p15, 0, r0, c0, c0, 0	@ read main ID register
 	and	r1, r0, #0x00f00000	@ variant
@@ -207,16 +158,13 @@ cache_init:
 	mrceq	p15, 0, r0, c1, c0, 1	@ read ACTLR
 	orreq	r0, r0, #0x6		@ Enable DP1(2), DP2(1)
 	mcreq	p15, 0, r0, c1, c0, 1	@ write ACTLR
-	/*
-	 * Invalidate L1 I/D
-	 */
+	
+	/** Invalidate L1 I/D */
 	mov	r0, #0			@ set up for MCR
 	mcr	p15, 0, r0, c8, c7, 0	@ invalidate TLBs
 	mcr	p15, 0, r0, c7, c5, 0	@ invalidate icache
 
-	/*
-	 * disable MMU stuff and caches
-	 */
+	/* disable MMU stuff and caches	 */
 	mrc	p15, 0, r0, c1, c0, 0
 	bic	r0, r0, #0x00002000	@ clear bits 13 (--V-)
 	bic	r0, r0, #0x00000007	@ clear bits 2:0 (-CAM)
@@ -224,76 +172,29 @@ cache_init:
 	orr	r0, r0, #0x00000002	@ set bit 1  (--A-) Align
 	orr	r0, r0, #0x00000800	@ set bit 11 (Z---) BTB
 	mcr	p15, 0, r0, c1, c0, 0
-#endif
-	
-
-        /* LED Test Code */
-		#if 0
-        ldr r0, =0x11000080
-        ldr r1, [r0]
-        bic r1, r1, #0xf00
-        orr r1, r1, #0x100
-        str r1, [r0]
-        #endif
-
 
 	/* Read booting information */
         ldr	r0, =POWER_BASE
         ldr	r1, [r0,#OMR_OFFSET]
         bic	r2, r1, #0xffffffc1
 
-	/* NAND BOOT */
-@	cmp	r2, #0x0		@ 512B 4-cycle
-@	moveq	r3, #BOOT_NAND
-
-@	cmp	r2, #0x2		@ 2KB 5-cycle
-@	moveq	r3, #BOOT_NAND
-
-@	cmp	r2, #0x4		@ 4KB 5-cycle	8-bit ECC
-@	moveq	r3, #BOOT_NAND
-
-	cmp     r2, #0xA
-        moveq   r3, #BOOT_ONENAND
-
-@	cmp	r2, #0x6		@ 4KB 5-cycle	16-bit ECC
-@	moveq	r3, #BOOT_NAND
-
 	/* SD/MMC BOOT */
 	cmp     r2, #0x4
-        moveq   r3, #BOOT_MMCSD	
+        moveq   r3, #BOOT_MMCSD		
 
-	/* eMMC4.3 BOOT */
-	cmp		r2, #0x6
-	moveq	r3, #BOOT_EMMC43
-
-	/* eMMC441 BOOT */
+	/* eMMC4.4.1 BOOT */
 	cmp		r2, #0x28
-	moveq	r3, #BOOT_EMMC441
-	
-        /* NOR BOOT */
-@	cmp     r2, #0x14
-@	moveq   r3, #BOOT_NOR	
-
-	/* For second device booting */
-	/* OneNAND BOOTONG failed */
-@	cmp     r2, #0x8
-@	moveq   r3, #BOOT_SEC_DEV
-
-	/* Uart BOOTONG failed */
-@	cmp     r2, #(0x1<<4)
-@	moveq   r3, #BOOT_SEC_DEV
-	
+	moveq	r3, #BOOT_EMMC441	
+      
 	ldr	r0, =INF_REG_BASE
 	str	r3, [r0, #INF_REG3_OFFSET]     
-
 	/*
 	 * Go setup Memory and board specific bits prior to relocation.
 	 */
-	//b     .
 	bl	lowlevel_init	/* go setup pll,mux,memory */
 
 
-	ldr	r0, =0x1002330C  /* PS_HOLD_CONTROL register */
+	ldr	r0, =0x1002330C     /* PS_HOLD_CONTROL register */
 	ldr	r1, =0x00005300	 /* PS_HOLD output high	*/
 	str	r1, [r0]
 
@@ -302,13 +203,6 @@ cache_init:
 	ldr	sp, _TEXT_PHY_BASE	/* setup temp stack pointer */
 	sub	sp, sp, #12
 	mov	fp, #0			/* no previous frame, so fp=0 */
-
-
-	/* I-Cache & D-Cache Enabled    */  
-//	mrc p15, 0, r0, c1, c0, 0
-//	orr r0, r0, #(0x1 << 2)
-//	orr r0, r0, #(0x1 << 12)
-//	mcr p15, 0, r0, c1, c0, 0
 
 	/* when we already run in ram, we don't need to relocate U-Boot.
 	 * and actually, memory controller must be configured before U-Boot
@@ -320,8 +214,6 @@ cache_init:
 	bic	r2, r2, r0		/* r0 <- current base addr of code */
 	cmp     r1, r2                  /* compare r0, r1                  */
 	beq     after_copy		/* r0 == r1 then skip flash copy   */
-
-
 
 	ldr	r0, =0x11000104  /* GPL2(0)  */
 	ldr	r1, =0x00000001	 /* GPL2(0 output high	*/
@@ -337,57 +229,18 @@ cache_init:
 9:	subs	r1, r1, #1
 	bne	9b
 
-//	ldr	r0, =0x11000C44 /* GPX2(0)  */
-//	ldr	r1, [r0]
-//	bic	r2, r1, #0xfe
-//	ldr	r1, =0x1
-
-
-
-//	ldr	r0, =INF_REG_BASE
-//	ldr	r3, [r0, #INF_REG3_OFFSET]  
-	
-//	cmp	r1, r2
-//	moveq   r3, #BOOT_MMCSD	
-//	ldr	r0, =INF_REG_BASE
-//	str	r3, [r0, #INF_REG3_OFFSET]
-//	cmp	r1, r2
-//	beq     mmcsd_boot
-
-
-
 	ldr	r0, =INF_REG_BASE
 	ldr	r1, [r0, #INF_REG3_OFFSET]
-	cmp	r1, #BOOT_NAND		/* 0x0 => boot device is nand */
-	beq		nand_boot
-	
-	cmp	r1, #BOOT_ONENAND	/* 0x1 => boot device is onenand */
-	beq		onenand_boot
-	
+		
 	cmp     r1, #BOOT_EMMC441
 	beq     emmc441_boot
-	
-	cmp     r1, #BOOT_EMMC43
-	beq     emmc_boot
 	
 	cmp     r1, #BOOT_MMCSD
 	beq     mmcsd_boot
 	
-	cmp     r1, #BOOT_NOR
-	beq     nor_boot
-	
 	cmp     r1, #BOOT_SEC_DEV
 	beq     mmcsd_boot
 
-nand_boot:
-	mov	r0, #0x1000
-	bl	copy_from_nand
-	b	after_copy
-
-onenand_boot:
-	bl	onenand_bl2_copy  /*goto 0x1010*/
-	b	after_copy
-//ly
 second_mmcsd_boot:
 	ldr   r3, =BOOT_MMCSD	
 	ldr	r0, =INF_REG_BASE
@@ -404,17 +257,6 @@ mmcsd_boot:
 	bl      movi_uboot_copy
 	b       after_copy
 
-emmc_boot:
-#if defined(CONFIG_CLK_1000_400_200) || defined(CONFIG_CLK_1000_200_200) || defined(CONFIG_CLK_800_400_200)
-	ldr	r0, =CMU_BASE
-	ldr	r2, =CLK_DIV_FSYS1_OFFSET
-	ldr	r1, [r0, r2]
-	orr r1, r1, #0x3
-	str r1, [r0, r2]
-#endif
-	bl		emmc_uboot_copy
-	b	after_copy
-
 emmc441_boot:
 #if defined(CONFIG_CLK_1000_400_200) || defined(CONFIG_CLK_1000_200_200) || defined(CONFIG_CLK_800_400_200)
 	ldr	r0, =CMU_BASE
@@ -424,7 +266,7 @@ emmc441_boot:
 	str r1, [r0, r2]
 #endif
 	bl		emmc441_uboot_copy
-//ly 20110824
+
 	ldr   r0, =0x43e00000
 	ldr   r1, [r0]
 	ldr   r2, =0x2000
@@ -432,15 +274,7 @@ emmc441_boot:
 	bne  second_mmcsd_boot
 	b	after_copy
 
-
-nor_boot:
-@	bl	read_hword
-	b	after_copy
-
-
 after_copy:
-
-
 #if defined(CONFIG_ENABLE_MMU)
 enable_mmu:
 	/* enable domain access */
@@ -517,44 +351,6 @@ _dmc_density:
 _mmu_table_base:
 	.word mmu_table
 #endif
-
-
-/*
- * copy U-Boot to SDRAM and jump to ram (from NAND or OneNAND)
- * r0: size to be compared
- * Load 1'st 2blocks to RAM because U-boot's size is larger than 1block(128k) size
- */
-	.globl copy_from_nand
-copy_from_nand:
-	push	{lr}		/* save return address */
-
-	mov	r9, r0
-	
-	mov	r9, #0x100		/* Compare about 8KB */
-	bl	copy_uboot_to_ram
-
-	tst 	r0, #0x0
-	bne	copy_failed
-
-	ldr	r0, =0xd0020000
-
-	ldr	r1, _TEXT_PHY_BASE	/* 0x23e00000 */
-1:	ldr	r3, [r0], #4
-	ldr	r4, [r1], #4
-	teq	r3, r4
-	bne	compare_failed	/* not matched */
-	subs	r9, r9, #4
-	bne	1b
-
-	pop	{pc}		/* all is OK */
-
-copy_failed:
-	nop			/* copy from nand failed */
-	b	copy_failed
-
-compare_failed:
-	nop			/* compare failed */
-	b	compare_failed
 
 /*
  * we assume that cache operation is done before. (eg. cleanup_before_linux())
@@ -767,7 +563,6 @@ fiq:
 	bl	do_fiq
 
 #endif
-	.align 5
 .global arm_cache_flush
 arm_cache_flush:
        mcr     p15, 0, r1, c7, c5, 0           @ invalidate I cache
@@ -866,7 +661,6 @@ CoInvalidateDCacheIndex:
 	;/* r0 = index */
 	mcr     p15, 0, r0, c7, c6, 2
 	mov     pc,lr
-
 
 #if defined(CONFIG_INTEGRATOR) && defined(CONFIG_ARCH_CINTEGRATOR)
 /* Use the IntegratorCP function from board/integratorcp/platform.S */

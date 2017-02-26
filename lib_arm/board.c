@@ -192,8 +192,11 @@ static int off_charge(void)
 static int display_banner (void)
 {
 	printf ("\n\n%s\n\n", version_string);
-	debug ("U-Boot code: %08lX -> %08lX  BSS: -> %08lX\n",
-	       _armboot_start, _bss_start, _bss_end);
+	printf("Debug by Joseph_hpf:\n");
+	printf(CONFIG_IDENT_CONFIG_H_STRING);
+	printf("\n\n");
+	debug ("U-Boot code:\n");
+	debug("0x%08lX(_armboot_start) -> 0x%08lX(_bss_start)  BSS: -> 0x%08lX(_bss_end)\n", _armboot_start, _bss_start, _bss_end);
 #ifdef CONFIG_MODEM_SUPPORT
 	debug ("Modem Support enabled\n");
 #endif

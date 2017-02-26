@@ -31,6 +31,7 @@
 #define CONFIG_S5PC210      1       /* in a SAMSUNG S5PC210 SoC */
 #define CONFIG_SMDKC210     1
 #define CONFIG_DEVICE_STRING    "iTOP-4412"
+#define CONFIG_IDENT_CONFIG_H_STRING	" itop_4412_ubuntu.h"
 
 #define CONFIG_EVT1     1       /* EVT1 */
 
